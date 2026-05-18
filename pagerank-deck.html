@@ -1,0 +1,1458 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Parallel Distributed Computing — Hadoop & Spark Framework</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --mono: 'IBM Plex Mono', ui-monospace, 'JetBrains Mono', Menlo, monospace;
+  --sans: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --light-bg: #F7F8FA;
+  --light-surface: #FFFFFF;
+  --light-fg: #1A1D23;
+  --light-muted: #6B7280;
+  --light-border: #E2E5EA;
+  --dark-bg: #0F1117;
+  --dark-surface: #181B25;
+  --dark-fg: #E0E3EA;
+  --dark-muted: #7A7F8A;
+  --dark-border: rgba(255,255,255,.08);
+  --term-bg: #1a1b26;
+  --term-bar: #13141d;
+  --term-border: rgba(255,255,255,.06);
+  --term-text: #c0c4cc;
+  --term-bright: #e8eaed;
+  --term-dim: #5c6066;
+  --term-prompt: #888;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0 }
+
+html, body {
+  width: 100%; height: 100%; overflow: hidden;
+  background: var(--dark-bg); color: var(--dark-fg);
+  font-family: var(--sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+#deck {
+  position: fixed; inset: 0;
+  width: 10000vw; height: 100vh;
+  display: flex; flex-wrap: nowrap;
+  transition: transform .75s cubic-bezier(.22,.68,0,1.0);
+  z-index: 10; will-change: transform;
+}
+
+.slide {
+  width: 100vw; height: 100vh; flex: 0 0 100vw;
+  position: relative;
+  padding: 4.5vh 5vw 5vh 5vw;
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+
+.slide.light { background: var(--light-bg); color: var(--light-fg) }
+.slide.dark { background: var(--dark-bg); color: var(--dark-fg) }
+
+.chrome {
+  display: flex; justify-content: space-between; align-items: center;
+  font-family: var(--mono); font-size: max(10px,.6vw);
+  letter-spacing: .2em; text-transform: uppercase;
+  opacity: .4; margin-bottom: 3vh;
+}
+
+.slide.light .chrome { border-bottom: 1px solid var(--light-border); padding-bottom: 1.5vh }
+.slide.dark .chrome { border-bottom: 1px solid var(--dark-border); padding-bottom: 1.5vh }
+
+.s-body { flex: 1; display: flex; flex-direction: column; min-height: 0 }
+
+.s-title {
+  font-family: var(--mono); font-weight: 600;
+  font-size: max(22px, 2.4vw); line-height: 1.15;
+  letter-spacing: -.02em; margin-bottom: 2vh;
+}
+
+.s-subtitle {
+  font-family: var(--sans); font-weight: 400;
+  font-size: max(14px, 1.1vw); line-height: 1.55;
+  opacity: .6; margin-bottom: 2.5vh;
+}
+
+.s-desc {
+  font-family: var(--sans); font-weight: 400;
+  font-size: max(14px, 1.05vw); line-height: 1.65;
+  opacity: .72;
+}
+
+.s-label {
+  font-family: var(--mono); font-size: max(10px, .65vw);
+  letter-spacing: .25em; text-transform: uppercase;
+  opacity: .4; margin-bottom: 1.5vh;
+}
+
+.s-heading {
+  font-family: var(--mono); font-weight: 600;
+  font-size: max(16px, 1.4vw); line-height: 1.2;
+  letter-spacing: -.01em; margin-bottom: 1.5vh;
+}
+
+.s-body-text {
+  font-family: var(--sans); font-weight: 400;
+  font-size: max(13px, .95vw); line-height: 1.6;
+  opacity: .72;
+}
+
+.hero-title {
+  font-family: var(--mono); font-weight: 700;
+  font-size: max(32px, 4.2vw); line-height: 1.08;
+  letter-spacing: -.03em;
+}
+
+.hero-sub {
+  font-family: var(--sans); font-weight: 300;
+  font-size: max(16px, 1.3vw); line-height: 1.5;
+  opacity: .45;
+}
+
+.g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 3.5vw; flex: 1; align-items: start }
+.g2-6-4 { display: grid; grid-template-columns: 6fr 4fr; gap: 3.5vw; flex: 1; align-items: start }
+.g2-4-6 { display: grid; grid-template-columns: 4fr 6fr; gap: 3.5vw; flex: 1; align-items: start }
+.g2-7-3 { display: grid; grid-template-columns: 7fr 3fr; gap: 3.5vw; flex: 1; align-items: start }
+.g3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 2.5vw; flex: 1; align-items: start }
+.g4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 2vw; flex: 1; align-items: start }
+
+.term {
+  background: var(--term-bg);
+  border: 1px solid var(--term-border);
+  border-radius: 8px; overflow: hidden;
+  font-family: var(--mono);
+  font-size: max(11px, .78vw);
+  line-height: 1.65;
+}
+.term-bar {
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 14px;
+  background: var(--term-bar);
+  border-bottom: 1px solid rgba(255,255,255,.04);
+}
+.term-bar .dots { display: flex; gap: 6px }
+.term-bar .dots i {
+  width: 10px; height: 10px; border-radius: 50%;
+  display: block; font-style: normal;
+}
+.term-bar .dots i:nth-child(1) { background: #ff5f57 }
+.term-bar .dots i:nth-child(2) { background: #febc2e }
+.term-bar .dots i:nth-child(3) { background: #28c840 }
+.term-bar .t-title {
+  font-family: var(--mono); font-size: max(10px,.6vw);
+  color: var(--term-dim); letter-spacing: .06em;
+  margin-left: 4px;
+}
+.term pre {
+  padding: 14px 18px; margin: 0;
+  color: var(--term-text); white-space: pre-wrap;
+  word-break: break-all;
+}
+.term .b { color: var(--term-bright); font-weight: 500 }
+.term .d { color: var(--term-dim) }
+.term .p { color: var(--term-prompt) }
+
+.slide.light .term { box-shadow: 0 2px 12px rgba(0,0,0,.08) }
+
+.tbl {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--mono);
+  font-size: max(11px, .75vw);
+  line-height: 1.5;
+}
+.tbl th, .tbl td { padding: 8px 12px; text-align: left }
+.tbl th {
+  font-weight: 500; letter-spacing: .12em;
+  text-transform: uppercase; opacity: .45;
+  font-size: max(9px, .6vw);
+}
+
+.slide.light .tbl th { border-bottom: 2px solid var(--light-border) }
+.slide.light .tbl td { border-bottom: 1px solid var(--light-border) }
+.slide.dark .tbl th { border-bottom: 2px solid var(--dark-border) }
+.slide.dark .tbl td { border-bottom: 1px solid var(--dark-border) }
+
+.tbl td:first-child { font-weight: 500 }
+
+.stat-card {
+  display: flex; flex-direction: column; gap: .4vh;
+  padding-top: 1.4vh;
+}
+.slide.light .stat-card { border-top: 1px solid var(--light-border) }
+.slide.dark .stat-card { border-top: 1px solid var(--dark-border) }
+.stat-card .stat-val {
+  font-family: var(--mono); font-weight: 700;
+  font-size: max(28px, 3.5vw); line-height: .95;
+  letter-spacing: -.03em;
+  font-feature-settings: "tnum";
+}
+.stat-card .stat-label {
+  font-family: var(--mono); font-size: max(9px, .6vw);
+  letter-spacing: .22em; text-transform: uppercase;
+  opacity: .4; margin-bottom: .3vh;
+}
+.stat-card .stat-note {
+  font-family: var(--sans); font-size: max(12px, .82vw);
+  opacity: .55; line-height: 1.45; margin-top: .5vh;
+}
+
+.info-row {
+  display: flex; align-items: baseline; gap: 1.5vw;
+  padding: 1.2vh 0;
+  font-family: var(--mono); font-size: max(12px, .82vw);
+  line-height: 1.5;
+}
+.slide.light .info-row { border-bottom: 1px solid var(--light-border) }
+.slide.dark .info-row { border-bottom: 1px solid var(--dark-border) }
+.info-row .info-k {
+  font-weight: 500; min-width: 14vw;
+  letter-spacing: .04em;
+}
+.info-row .info-v { opacity: .65; font-weight: 400 }
+
+.callout {
+  padding: 2vh 2vw;
+  font-family: var(--sans);
+  font-size: max(13px, .95vw);
+  line-height: 1.6; opacity: .82;
+  border-radius: 6px;
+}
+.slide.light .callout { background: rgba(0,0,0,.03); border-left: 2px solid var(--light-border) }
+.slide.dark .callout { background: rgba(255,255,255,.03); border-left: 2px solid var(--dark-border) }
+
+.pipe-grid {
+  display: grid; gap: 1.5vw;
+}
+.pipe-step {
+  display: flex; flex-direction: column; gap: .5vh;
+  padding-top: 1.2vh;
+}
+.slide.light .pipe-step { border-top: 1px solid var(--light-border) }
+.slide.dark .pipe-step { border-top: 1px solid var(--dark-border) }
+.pipe-step .ps-num {
+  font-family: var(--mono); font-size: max(10px,.65vw);
+  opacity: .35; letter-spacing: .1em;
+}
+.pipe-step .ps-title {
+  font-family: var(--mono); font-weight: 600;
+  font-size: max(13px, 1vw); line-height: 1.2;
+}
+.pipe-step .ps-desc {
+  font-family: var(--sans); font-weight: 400;
+  font-size: max(11px, .78vw); opacity: .55;
+  line-height: 1.45;
+}
+
+.bullet-list {
+  list-style: none; padding: 0;
+  display: flex; flex-direction: column; gap: 1.2vh;
+}
+.bullet-list li {
+  font-family: var(--sans); font-size: max(13px, .95vw);
+  line-height: 1.55; opacity: .72;
+  padding-left: 1.5vw; position: relative;
+}
+.bullet-list li::before {
+  content: ""; position: absolute; left: 0; top: .7em;
+  width: 4px; height: 4px; border-radius: 50%;
+  background: currentColor; opacity: .35;
+}
+
+code {
+  font-family: var(--mono); font-size: .92em;
+  padding: 2px 6px; border-radius: 4px;
+}
+.slide.light code { background: rgba(0,0,0,.05) }
+.slide.dark code { background: rgba(255,255,255,.08) }
+
+.divider { width: 100%; height: 1px; opacity: .12; background: currentColor; margin: 2vh 0 }
+
+.sec-num {
+  font-family: var(--mono); font-weight: 700;
+  font-size: max(60px, 8vw); line-height: .85;
+  letter-spacing: -.04em; opacity: .08;
+  position: absolute; right: 5vw; bottom: 6vh;
+  font-feature-settings: "tnum";
+}
+
+.warn {
+  display: inline-flex; align-items: center; gap: .5vw;
+  font-family: var(--mono); font-size: max(10px, .65vw);
+  letter-spacing: .15em; text-transform: uppercase;
+  padding: 5px 12px; border-radius: 4px;
+  opacity: .7;
+}
+.slide.light .warn { background: rgba(0,0,0,.05) }
+.slide.dark .warn { background: rgba(255,255,255,.06) }
+
+.tag {
+  display: inline-block;
+  font-family: var(--mono); font-size: max(9px, .58vw);
+  letter-spacing: .18em; text-transform: uppercase;
+  padding: 4px 10px; border-radius: 3px; opacity: .6;
+}
+.slide.light .tag { border: 1px solid var(--light-border) }
+.slide.dark .tag { border: 1px solid var(--dark-border) }
+
+.speaker {
+  font-family: var(--mono); font-size: max(10px, .62vw);
+  letter-spacing: .2em; text-transform: uppercase;
+  opacity: .35;
+}
+
+#nav {
+  position: fixed; left: 50%; bottom: 2.2vh;
+  transform: translateX(-50%); z-index: 30;
+  display: flex; gap: 6px; padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(0,0,0,.25);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+body.light-nav #nav { background: rgba(0,0,0,.08) }
+#nav .dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: rgba(255,255,255,.25);
+  cursor: pointer; transition: all .25s ease;
+  border: 0; padding: 0;
+}
+#nav .dot:hover { background: rgba(255,255,255,.45); transform: scale(1.2) }
+#nav .dot.active { background: rgba(255,255,255,.9); width: 18px; border-radius: 999px }
+body.light-nav #nav .dot { background: rgba(0,0,0,.15) }
+body.light-nav #nav .dot.active { background: rgba(0,0,0,.7) }
+
+.flex-fill { flex: 1 }
+.gap-1 { gap: 1vh }
+.gap-2 { gap: 2vh }
+.gap-3 { gap: 3vh }
+.mt-1 { margin-top: 1vh }
+.mt-2 { margin-top: 2vh }
+.mt-3 { margin-top: 3vh }
+.mb-1 { margin-bottom: 1vh }
+.mb-2 { margin-bottom: 2vh }
+
+.term .x-tag { color: #8b919a }
+.term .x-attr { color: #a0a4ac }
+.term .x-val { color: #d0d3d9 }
+</style>
+</head>
+<body>
+
+<div id="deck">
+
+<!-- ========== SLIDE 01 · Title ========== -->
+<section class="slide dark" data-screen-label="01 Title">
+  <div class="chrome"><span>University of Central Punjab</span><span>01 / 20</span></div>
+  <div class="s-body" style="justify-content:center;gap:3.5vh">
+    <div class="hero-title">Parallel Distributed<br>Computing</div>
+    <div style="display:flex;align-items:baseline;gap:1.2vw;margin-top:1vh">
+      <span style="font-family:var(--mono);font-size:max(14px,1.1vw);opacity:.45;font-weight:400;letter-spacing:.02em">Hadoop HDFS 3.4.0 + Apache Spark 3.5.0</span>
+    </div>
+    <div class="divider" style="margin:2vh 0;max-width:50vw"></div>
+    <div style="display:grid;grid-template-columns:repeat(4,auto);gap:3vw;font-family:var(--mono);font-size:max(11px,.72vw);letter-spacing:.08em;opacity:.45">
+      <div style="display:flex;flex-direction:column;gap:.4vh"><div><span style="opacity:.6">01</span>&ensp;Munim Ahmad</div><div style="opacity:.5;font-size:.85em;letter-spacing:.12em">L1F22BSCS0413</div></div>
+      <div style="display:flex;flex-direction:column;gap:.4vh"><div><span style="opacity:.6">02</span>&ensp;Mohammad</div><div style="opacity:.5;font-size:.85em;letter-spacing:.12em">L1F22BSCS0417</div></div>
+      <div style="display:flex;flex-direction:column;gap:.4vh"><div><span style="opacity:.6">03</span>&ensp;Haris Shakeel</div><div style="opacity:.5;font-size:.85em;letter-spacing:.12em">L1F22BSCS0434</div></div>
+      <div style="display:flex;flex-direction:column;gap:.4vh"><div><span style="opacity:.6">04</span>&ensp;Mehak Zehra</div><div style="opacity:.5;font-size:.85em;letter-spacing:.12em">L1F22BSCS0995</div></div>
+    </div>
+    <div style="font-family:var(--mono);font-size:max(10px,.6vw);letter-spacing:.2em;text-transform:uppercase;opacity:.25;margin-top:1vh">Advisor &mdash; Dr. Saira Andleeb Gillani &ensp;&bull;&ensp; Faculty of Information Technology</div>
+  </div>
+  <span class="sec-num">PR</span>
+</section>
+
+<!-- ========== SLIDE 02 · PageRank ========== -->
+<section class="slide light" data-screen-label="02 PageRank">
+  <div class="chrome"><span>Section 1 &mdash; Introduction</span><span>02 / 20</span></div>
+  <div class="s-body gap-2">
+    <div class="s-title">What is PageRank?</div>
+    <div class="speaker">Speaker: Munim Ahmad</div>
+    <div class="g2" style="margin-top:2vh">
+      <div style="display:flex;flex-direction:column;gap:2vh">
+        <div class="s-body-text">PageRank was developed by Larry Page and Sergey Brin at Stanford University to rank web pages in search results. It counts the number and quality of links to a page to estimate importance.</div>
+        <div class="callout" style="margin-top:1vh">
+          <strong style="font-family:var(--mono);font-size:max(10px,.65vw);letter-spacing:.15em;text-transform:uppercase;opacity:.5;display:block;margin-bottom:.8vh">Core Assumption</strong>
+          Important websites naturally receive more incoming links from other sites.
+        </div>
+        <div class="s-label" style="margin-top:1.5vh">Iterative Process</div>
+        <div class="pipe-grid" style="grid-template-columns:repeat(4,1fr)">
+          <div class="pipe-step"><span class="ps-num">01</span><span class="ps-title">Init</span><span class="ps-desc">Rank = 1/N per node</span></div>
+          <div class="pipe-step"><span class="ps-num">02</span><span class="ps-title">Distribute</span><span class="ps-desc">Split rank across outgoing edges</span></div>
+          <div class="pipe-step"><span class="ps-num">03</span><span class="ps-title">Dampen</span><span class="ps-desc">Apply d = 0.85 factor</span></div>
+          <div class="pipe-step"><span class="ps-num">04</span><span class="ps-title">Converge</span><span class="ps-desc">Repeat until stable</span></div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:1.5vh">
+        <div class="s-label">Formula</div>
+        <div class="term">
+          <div class="term-bar"><span class="dots"><i></i><i></i><i></i></span><span class="t-title">pagerank-formula</span></div>
+          <pre><span class="b">PR(A) = (1-d)/N + d * Σ( PR(Ti) / C(Ti) )</span>
+
+<span class="d">where:</span>
+  <span class="b">d</span>     = damping factor (0.85)
+  <span class="b">N</span>     = total number of nodes
+  <span class="b">Ti</span>    = pages linking to A
+  <span class="b">C(Ti)</span> = outgoing links from Ti</pre>
+        </div>
+        <div class="s-label" style="margin-top:1vh">Spark RDD Operations</div>
+        <div class="term">
+          <div class="term-bar"><span class="dots"><i></i><i></i><i></i></span><span class="t-title">rdd-operations</span></div>
+          <pre><span class="b">map</span>       <span class="d">→ transform each element</span>
+<span class="b">flatMap</span>   <span class="d">→ distribute rank contributions</span>
+<span class="b">reduceByKey</span> <span class="d">→ aggregate by node ID</span>
+<span class="b">join</span>      <span class="d">→ reconnect with link structure</span>
+<span class="b">cache()</span>   <span class="d">→ keep RDD in memory</span></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== SLIDE 03 · Why Distributed ========== -->
+<section class="slide dark" data-screen-label="03 Why Distributed">
+  <div class="chrome"><span>Section 1 &mdash; Introduction</span><span>03 / 20</span></div>
+  <div class="s-body gap-2">
+    <div class="s-title">Why Distributed Computing?</div>
+    <div class="g2" style="margin-top:2vh">
+      <div style="display:flex;flex-direction:column;gap:2vh">
+        <div class="s-body-text">The Stanford Web-Google dataset contains millions of vertices and billions of edges. Single-machine processing would take hours. Apache Spark partitions the graph across multiple nodes for parallel execution.</div>
+        <div class="g3" style="margin-top:1.5vh;flex:0">
+          <div class="stat-card">
+            <span class="stat-label">Vertices</span>
+            <span class="stat-val">875K</span>
+            <span class="stat-note">Web pages in the graph</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Edges</span>
+            <span class="stat-val">5.1M</span>
+            <span class="stat-note">Hyperlinks between pages</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Format</span>
+            <span class="stat-val" style="font-size:max(18px,2vw)">Adj. List</span>
+            <span class="stat-note">Source ID → destination IDs</span>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:1.5vh">
+        <div class="s-label">Distributed Advantages</div>
+        <ul class="bullet-list">
+          <li>Split the graph across machines (partitioning)</li>
+          <li>Process partitions in parallel across the cluster</li>
+          <li>Iterative algorithms converge faster through parallel execution</li>
+          <li>Fault tolerance via RDD lineage and checkpointing</li>
+        </ul>
+        <div class="s-label" style="margin-top:2vh">Dataset Source</div>
+        <div class="term">
+          <div class="term-bar"><span class="dots"><i></i><i></i><i></i></span><span class="t-title">stanford-snap</span></div>
+          <pre><span class="d"># Stanford SNAP Datasets</span>
+<span class="b">https://snap.stanford.edu/data/web-Google.gz</span>
+
+<span class="d"># Alternative: Twitter Followers</span>
+https://snap.stanford.edu/data/twitter-2010.txt.gz</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== SLIDE 04 · Architecture ========== -->
+<section class="slide light" data-screen-label="04 Architecture">
+  <div class="chrome"><span>Section 1 &mdash; Introduction</span><span>04 / 20</span></div>
+  <div class="s-body gap-2">
+    <div class="s-title">Architecture & Prerequisites</div>
+    <div class="g2" style="margin-top:1.5vh">
+      <div style="display:flex;flex-direction:column;gap:2vh">
+        <div class="s-label">Hardware Requirements</div>
+        <table class="tbl">
+          <thead><tr><th>Component</th><th>Minimum</th><th>Recommended</th></tr></thead>
+          <tbody>
+            <tr><td>CPU</td><td>2 cores</td><td>4+ cores</td></tr>
+            <tr><td>RAM</td><td>4 GB</td><td>8+ GB</td></tr>
+            <tr><td>Disk</td><td>20 GB free</td><td>50+ GB free</td></tr>
+            <tr><td>Network</td><td>100 Mbps</td><td>1 Gbps</td></tr>
+          </tbody>
+        </table>
+        <div class="s-label" style="margin-top:1vh">Software Stack</div>
+        <table class="tbl">
+          <thead><tr><th>Software</th><th>Version</th></tr></thead>
+          <tbody>
+            <tr><td>Java JDK</td><td>OpenJDK 17 (LTS)</td></tr>
+            <tr><td>Hadoop HDFS</td><td>3.4.0</td></tr>
+            <tr><td>Apache Spark</td><td>3.5.0</td></tr>
+            <tr><td>Python</td><td>3.11</td></tr>
+            <tr><td>PySpark</td><td>3.5.0</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:2vh">
+        <div class="s-label">Cluster Topology</div>
+        <div class="callout">
+          <strong style="font-family:var(--mono);font-size:.85em">1 Master Node</strong> — cluster manager + Spark driver<br>
+          <strong style="font-family:var(--mono);font-size:.85em">1+ Worker Nodes</strong> — execute tasks in parallel
+        </div>
+        <div class="s-label" style="margin-top:1vh">Required Ports</div>
+        <table class="tbl">
+          <thead><tr><th>Port</th><th>Service</th></tr></thead>
+          <tbody>
+            <tr><td>7077</td><td>Spark Master</td></tr>
+            <tr><td>8080</td><td>Spark Master UI</td></tr>
+            <tr><td>8081</td><td>Spark Worker UI</td></tr>
+            <tr><td>4040</td><td>Spark Driver</td></tr>
+            <tr><td>9000</td><td>HDFS NameNode</td></tr>
+            <tr><td>9870</td><td>HDFS NameNode UI</td></tr>
+            <tr><td>9864</td><td>HDFS DataNode</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== SLIDE 05 · Network & IP ========== -->
+<section class="slide dark" data-screen-label="05 Network">
+  <div class="chrome"><span>Section 1 &mdash; Introduction</span><span>05 / 20</span></div>
+  <div class="s-body gap-2">
+    <div class="s-title">Network & IP Discovery</div>
+    <div class="s-subtitle">Accurate IP discovery is required for <code>/etc/hosts</code> configuration across all nodes.</div>
+    <div class="g2" style="margin-top:1vh">
+      <div style="display:flex;flex-direction:column;gap:2vh">
+        <div class="term">
+          <div class="term-bar"><span class="dots"><i></i><i></i><i></i></span><span class="t-title">ip-discovery</span></div>
+          <pre><span class="d"># Linux & WSL2</span>
+<span class="b">hostname -I</span> | awk '{print $1}'
+
+<span class="d"># macOS (Wi-Fi)</span>
+<span class="b">ipconfig getifaddr en0</span>
+
+<span class="d"># macOS (Ethernet)</span>
+<span class="b">ipconfig getifaddr en1</span></pre>
+        </div>
+        <div class="term">
+          <div class="term-bar"><span class="dots"><i></i><i></i><i></i></span><span class="t-title">/etc/hosts</span></div>
+          <pre><span class="d"># Add to ALL nodes</span>
+<span class="b">192.168.1.100</span>  spark-master
+<span class="b">192.168.1.101</span>  spark-worker-1
+<span class="b">192.168.1.102</span>  spark-worker-2</pre>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:2vh">
+        <div class="term">
+          <div class="term-bar"><span class="dots"><i></i><i></i><i></i></span><span class="t-title">connectivity-test</span></div>
+          <pre><span class="d"># Verify from worker nodes</span>
+<span class="p">$</span> <span class="b">ping -c 4 spark-master</span>
+
+<span class="d"># Verify from master node</span>
+<span class="p">$</span> <span class="b">ping -c 4 spark-worker-1</span>
+<span class="p">$</span> <span class="b">ping -c 4 spark-worker-2</span></pre>
+        </div>
+        <div class="callout">
+          All nodes must be on the same LAN/Wi-Fi network. Static IPs are recommended for consistency. If pings fail, check firewall settings first.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== SLIDE 06 · WSL2 Fix ========== -->
+<section class="slide light" data-screen-label="06 WSL2 Fix">
+  <div class="chrome"><span>Section 2 &mdash; Environment Setup</span><span>06 / 20</span></div>
+  <div class="s-body gap-2">
+    <div style="display:flex;align-items:center;gap:1.5vw">
+      <div class="s-title" style="margin-bottom:0">The WSL2 Networking Fix</div>
+      <span class="warn">Critical &mdash; Windows Users</span>
+    </div>
+    <div class="speaker">Speaker: Mohammad</div>
+    <div class="g2" style="margin-top:1.5vh">
+      <div style="display:flex;flex-direction:column;gap:2vh">
+        <div class="s-body-text">WSL2 hides behind a private virtual network by default. Forcing <strong>Mirrored Mode</strong> strips this away, allowing the Linux subsystem to share the Windows laptop's physical IP address.</div>
+        <div class="term">
+          <div class="term-bar"><span class="dots"><i></i><i></i><i></i></span><span class="t-title">cmd.exe — .wslconfig</span></div>
+          <pre><span class="d">REM Run in Command Prompt (not PowerShell)</span>
+<span class="b">echo [wsl2] > %userprofile%\.wslconfig</span>
+<span class="b">echo networkingMode=mirrored >> %userprofile%\.wslconfig</span>
+echo dnsTunneling=true >> %userprofile%\.wslconfig
+echo autoProxy=true >> %userprofile%\.wslconfig
+echo firewall=true >> %userprofile%\.wslconfig
+<span class="b">wsl --shutdown</span></pre>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:2vh">
+        <div class="s-label">Firewall Rules (Admin CMD)</div>
+        <div class="term">
+          <div class="term-bar"><span class="dots"><i></i><i></i><i></i></span><span class="t-title">admin-cmd — firewall</span></div>
+          <pre><span class="d">REM Enable ping + required ports</span>
+<span class="b">netsh advfirewall firewall</span> set rule ^
+  name="Echo Request - ICMPv4-In" new enable=yes
+
+<span class="b">netsh advfirewall firewall</span> add rule ^
+  name="Allow SSH" protocol=TCP ^
+  dir=in localport=<span class="b">22</span> action=allow
+
+<span class="b">netsh advfirewall firewall</span> add rule ^
+  name="Allow Spark Master" protocol=TCP ^
+  dir=in localport=<span class="b">7077</span> action=allow
+
+<span class="d">REM + ports 8080, 8081, 9000, 9864, 9866</span>
+<span class="d">REM + shuffle range 40000-65535</span></pre>
+        </div>
+        <div class="term" style="margin-top:.5vh">
+          <div class="term-bar"><span class="dots"><i></i><i></i><i></i></span><span class="t-title">wsl2 — verify</span></div>
+          <pre><span class="p">$</span> <span class="b">ip addr show eth0</span>
+<span class="d"># Should show 192.168.x.x (LAN range)</span></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== SLIDE 07 · SSH ========== -->
+<section class="slide dark" data-screen-label="07 SSH">
+  <div class="chrome"><span>Section 2 &mdash; Environment Setup</span><span>07 / 20</span></div>
+  <div class="s-body gap-2">
+    <div class="s-title">Passwordless SSH & User Mapping</div>
+    <div class="s-subtitle">Required for Hadoop startup scripts to connect to worker nodes seamlessly.</div>
+    <div class="g2" style="margin-top:1vh">
+      <div style="display:flex;flex-direction:column;gap:2vh">
+        <div class="term">
+          <div class="term-bar"><span class="dots"><i></i><i></i><i></i></span><span class="t-title">master-node — ssh-keygen</span></div>
+          <pre><span class="d"># Generate key pair (no passphrase)</span>
+<span class="p">$</span> <span class="b">ssh-keygen -t rsa -P '' -f ~/.ssh/id_rsa</span>
+
+<span class="d"># Authorize master → itself</span>
+<span class="p">$</span> cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
+<span class="p">$</span> chmod 600 ~/.ssh/authorized_keys
+
+<span class="d"># Copy key to each worker</span>
+<span class="p">$</span> <span class="b">ssh-copy-id &lt;worker-user&gt;@spark-worker-1</span>
+<span class="p">$</span> <span class="b">ssh-copy-id &lt;worker-user&gt;@spark-worker-2</span></pre>
+        </div>
+        <div class="term">
+          <div class="term-bar"><span class="dots"><i></i><i></i><i></i></span><span class="t-title">verify</span></div>
+          <pre><span class="p">$</span> <span class="b">ssh spark-worker-1 hostname</span>
+<span class="d"># Should return hostname without password prompt</span></pre>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:2vh">
+        <div class="s-label">Username Mapping (Mixed Laptops)</div>
+        <div class="s-body-text" style="margin-bottom:1vh">If the master and worker machines have different system usernames, SSH must translate automatically.</div>
+        <div class="term">
+          <div class="term-bar"><span class="dots"><i></i><i></i><i></i></span><span class="t-title">~/.ssh/config</span></div>
+          <pre><span class="d"># Hardcoded User Mapping</span>
+<span class="b">Host spark-worker-1</span>
+    User &lt;worker-1-username&gt;
+
+<span class="b">Host spark-worker-2</span>
+    User &lt;worker-2-username&gt;</pre>
+        </div>
+        <div class="term" style="margin-top:.5vh">
+          <div class="term-bar"><span class="dots"><i></i><i></i><i></i></span><span class="t-title">permissions</span></div>
+          <pre><span class="p">$</span> <span class="b">chmod 600 ~/.ssh/config</span></pre>
+        </div>
+        <div class="callout" style="margin-top:1vh">
+          Never run <code>start-dfs.sh</code> or <code>hdfs namenode -format</code> with <code>sudo</code>. Permission denied errors will follow.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== SLIDE 08 · Java ========== -->
+<section class="slide light" data-screen-label="08 Java">
+  <div class="chrome"><span>Section 2 &mdash; Environment Setup</span><span>08 / 20</span></div>
+  <div class="s-body gap-2">
+    <div class="s-title">Java 17 Setup</div>
+    <div class="s-subtitle">Spark and Hadoop depend on OpenJDK 17 (LTS). Must be installed on every node.</div>
+    <div class="g2" style="margin-top:1vh">
+      <div style="display:flex;flex-direction:column;gap:2vh">
+        <div class="s-label">macOS</div>
+        <div class="term">
+          <div class="term-bar"><span class="dots"><i></i><i></i><i></i></span><span class="t-title">macos — homebrew</span></div>
+          <pre><span class="p">$</span> <span class="b">brew install openjdk@17</span>
+
+<span class="d"># Make JDK discoverable</span>
+<span class="p">$</span> sudo ln -sfn "$(brew --prefix)/opt/openjdk@17/libexec/openjdk.jdk" \
+    /Library/Java/JavaVirtualMachines/openjdk-17.jdk
+
+<span class="d"># Add to ~/.zshrc</span>
+export JAVA_HOME=$(/usr/libexec/java_home -v 17)
+export PATH="$(brew --prefix)/opt/openjdk@17/bin:$PATH"
+
+<span class="p">$</span> <span class="b">java -version</span></pre>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:2vh">
+        <div class="s-label">Linux & WSL2</div>
+        <div class="term">
+          <div class="term-bar"><span class="dots"><i></i><i></i><i></i></span><span class="t-title">ubuntu — apt</span></div>
+          <pre><span class="p">$</span> sudo apt update
+<span class="p">$</span> <span class="b">sudo apt install -y openjdk-17-jdk</span>
+
+<span class="d"># Detect and export JAVA_HOME</span>
+JAVA_PATH=$(dirname "$(dirname \
+  "$(readlink -f "$(which javac)")")")
+
+<span class="d"># Add to ~/.bashrc</span>
+export JAVA_HOME=$JAVA_PATH
+export PATH=$JAVA_HOME/bin:$PATH
+
+<span class="p">$</span> source ~/.bashrc
+<span class="p">$</span> <span class="b">java -version</span>
+<span class="p">$</span> <span class="b">javac -version</span></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== SLIDE 09 · Hadoop Install ========== -->
+<section class="slide dark" data-screen-label="09 Hadoop Install">
+  <div class="chrome"><span>Section 2 &mdash; Environment Setup</span><span>09 / 20</span></div>
+  <div class="s-body gap-2">
+    <div class="s-title">Hadoop HDFS Installation</div>
+    <div class="s-subtitle">HDFS is required for storing and distributing the dataset across the cluster.</div>
+    <div class="g2" style="margin-top:1vh">
+      <div style="display:flex;flex-direction:column;gap:2vh">
+        <div class="term">
+          <div class="term-bar"><span class="dots"><i></i><i></i><i></i></span><span class="t-title">linux — download & extract</span></div>
+          <pre><span class="d"># Download Hadoop 3.4.0</span>
+<span class="p">$</span> <span class="b">wget</span> https://archive.apache.org/dist/hadoop/\
+common/hadoop-3.4.0/<span class="b">hadoop-3.4.0.tar.gz</span>
+
+<span class="d"># Extract to /usr/local</span>
+<span class="p">$</span> sudo tar -xzf hadoop-3.4.0.tar.gz -C /usr/local/
+<span class="p">$</span> sudo mv /usr/local/hadoop-3.4.0 /usr/local/hadoop
+
+<span class="d"># CRITICAL: Claim ownership</span>
+<span class="p">$</span> <span class="b">sudo chown -R $(whoami) /usr/local/hadoop</span></pre>
+        </div>
+        <div class="term">
+          <div class="term-bar"><span class="dots"><i></i><i></i><i></i></span><span class="t-title">macos — curl</span></div>
+          <pre><span class="p">$</span> curl -L -o hadoop-3.4.0.tar.gz \
+  https://archive.apache.org/dist/hadoop/\
+  common/hadoop-3.4.0/hadoop-3.4.0.tar.gz
+<span class="p">$</span> sudo tar -xzf hadoop-3.4.0.tar.gz -C /usr/local/
+<span class="p">$</span> sudo mv /usr/local/hadoop-3.4.0 /usr/local/hadoop</pre>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:2vh">
+        <div class="s-label">Environment Variables</div>
+        <div class="term">
+          <div class="term-bar"><span class="dots"><i></i><i></i><i></i></span><span class="t-title">~/.bashrc or ~/.zshrc</span></div>
+          <pre>export <span class="b">HADOOP_HOME</span>=/usr/local/hadoop
+export <span class="b">HADOOP_CONF_DIR</span>=$HADOOP_HOME/etc/hadoop
+export PATH=$HADOOP_HOME/bin:$HADOOP_HOME/sbin:$PATH
+
+<span class="p">$</span> source ~/.bashrc</pre>
+        </div>
+        <div class="s-label" style="margin-top:1.5vh">File Structure</div>
+        <div class="term">
+          <div class="term-bar"><span class="dots"><i></i><i></i><i></i></span><span class="t-title">tree</span></div>
+          <pre>/usr/local/hadoop/
+├── etc/hadoop/
+│   ├── core-site.xml
+│   ├── hdfs-site.xml
+│   ├── hadoop-env.sh
+│   └── workers
+├── bin/
+└── sbin/</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== SLIDE 10 · Hadoop XML ========== -->
+<section class="slide light" data-screen-label="10 Hadoop XML">
+  <div class="chrome"><span>Section 2 &mdash; Environment Setup</span><span>10 / 20</span></div>
+  <div class="s-body gap-2">
+    <div style="display:flex;align-items:center;gap:1.5vw">
+      <div class="s-title" style="margin-bottom:0">Hadoop XML Configuration</div>
+      <span class="warn">Must be identical across all nodes</span>
+    </div>
+    <div class="g3" style="margin-top:2vh">
+      <div style="display:flex;flex-direction:column;gap:1.5vh">
+        <div class="s-label">core-site.xml</div>
+        <div class="term">
+          <div class="term-bar"><span class="dots"><i></i><i></i><i></i></span><span class="t-title">core-site.xml</span></div>
+          <pre><span class="x-tag">&lt;configuration&gt;</span>
+  <span class="x-tag">&lt;property&gt;</span>
+    <span class="x-attr">&lt;name&gt;</span>fs.defaultFS<span class="x-attr">&lt;/name&gt;</span>
+    <span class="x-val">&lt;value&gt;</span><span class="b">hdfs://spark-master:9000</span><span class="x-val">&lt;/value&gt;</span>
+  <span class="x-tag">&lt;/property&gt;</span>
+  <span class="x-tag">&lt;property&gt;</span>
+    <span class="x-attr">&lt;name&gt;</span>hadoop.tmp.dir<span class="x-attr">&lt;/name&gt;</span>
+    <span class="x-val">&lt;value&gt;</span>${user.home}/hadoop_tmp<span class="x-val">&lt;/value&gt;</span>
+  <span class="x-tag">&lt;/property&gt;</span>
+<span class="x-tag">&lt;/configuration&gt;</span></pre>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:1.5vh">
+        <div class="s-label">hdfs-site.xml</div>
+        <div class="term">
+          <div class="term-bar"><span class="dots"><i></i><i></i><i></i></span><span class="t-title">hdfs-site.xml</span></div>
+          <pre><span class="x-tag">&lt;configuration&gt;</span>
+  <span class="x-tag">&lt;property&gt;</span>
+    <span class="x-attr">&lt;name&gt;</span>dfs.replication<span class="x-attr">&lt;/name&gt;</span>
+    <span class="x-val">&lt;value&gt;</span><span class="b">2</span><span class="x-val">&lt;/value&gt;</span>
+  <span class="x-tag">&lt;/property&gt;</span>
+  <span class="x-tag">&lt;property&gt;</span>
+    <span class="x-attr">&lt;name&gt;</span>dfs.namenode.name.dir<span class="x-attr">&lt;/name&gt;</span>
+    <span class="x-val">&lt;value&gt;</span>file://${user.home}/hadoop_data/namenode<span class="x-val">&lt;/value&gt;</span>
+  <span class="x-tag">&lt;/property&gt;</span>
+  <span class="x-tag">&lt;property&gt;</span>
+    <span class="x-attr">&lt;name&gt;</span>dfs.datanode.data.dir<span class="x-attr">&lt;/name&gt;</span>
+    <span class="x-val">&lt;value&gt;</span>file://${user.home}/hadoop_data/datanode<span class="x-val">&lt;/value&gt;</span>
+  <span class="x-tag">&lt;/property&gt;</span>
+<span class="x-tag">&lt;/configuration&gt;</span></pre>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:1.5vh">
+        <div class="s-label">hadoop-env.sh</div>
+        <div class="term">
+          <div class="term-bar"><span class="dots"><i></i><i></i><i></i></span><span class="t-title">hadoop-env.sh</span></div>
+          <pre><span class="d"># CRITICAL: Hardcode path</span>
+<span class="d"># SSH bypasses ~/.bashrc</span>
+
+<span class="d"># Linux & WSL2:</span>
+export <span class="b">JAVA_HOME</span>=\
+  /usr/lib/jvm/java-17-openjdk-amd64
+
+<span class="d"># macOS:</span>
+export <span class="b">JAVA_HOME</span>=\
+  $(/usr/libexec/java_home -v 17)
+
+export HADOOP_OPTS=\
+  "-Djava.net.preferIPv4Stack=true"</pre>
+        </div>
+        <div class="callout" style="margin-top:1vh;font-size:max(11px,.75vw)">
+          XML <code>&lt;?xml version="1.0"?&gt;</code> must start at line 1, column 1. A single blank line above it causes a fatal <strong>SAXParseException</strong>.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== SLIDE 11 · Spark Install ========== -->
+<section class="slide dark" data-screen-label="11 Spark Install">
+  <div class="chrome"><span>Section 3 &mdash; Spark & Cluster</span><span>11 / 20</span></div>
+  <div class="s-body gap-2">
+    <div class="s-title">Apache Spark Installation</div>
+    <div class="speaker">Speaker: Haris Shakeel</div>
+    <div class="s-subtitle">Spark 3.5.0 with Hadoop 3 support. Must be installed on every node.</div>
+    <div class="g2" style="margin-top:1.5vh">
+      <div style="display:flex;flex-direction:column;gap:2vh">
+        <div class="term">
+          <div class="term-bar"><span class="dots"><i></i><i></i><i></i></span><span class="t-title">linux — install</span></div>
+          <pre><span class="d"># Download Spark 3.5.0 + Hadoop 3</span>
+<span class="p">$</span> <span class="b">wget</span> https://archive.apache.org/dist/spark/\
+spark-3.5.0/<span class="b">spark-3.5.0-bin-hadoop3.tgz</span>
+
+<span class="d"># Extract and claim ownership</span>
+<span class="p">$</span> sudo tar -xzf spark-3.5.0-bin-hadoop3.tgz \
+    -C /usr/local/
+<span class="p">$</span> sudo mv /usr/local/spark-3.5.0-bin-hadoop3 \
+    /usr/local/spark
+<span class="p">$</span> <span class="b">sudo chown -R $(whoami) /usr/local/spark</span></pre>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:2vh">
+        <div class="s-label">Environment Variables</div>
+        <div class="term">
+          <div class="term-bar"><span class="dots"><i></i><i></i><i></i></span><span class="t-title">~/.bashrc or ~/.zshrc</span></div>
+          <pre>export <span class="b">SPARK_HOME</span>=/usr/local/spark
+export PATH=$SPARK_HOME/bin:$PATH
+export <span class="b">PYSPARK_PYTHON</span>=python3
+export <span class="b">PYSPARK_DRIVER_PYTHON</span>=python3
+
+<span class="p">$</span> source ~/.bashrc</pre>
+        </div>
+        <div class="s-label" style="margin-top:1.5vh">macOS Variant</div>
+        <div class="term">
+          <div class="term-bar"><span class="dots"><i></i><i></i><i></i></span><span class="t-title">macos</span></div>
+          <pre><span class="p">$</span> curl -L -o spark-3.5.0-bin-hadoop3.tgz \
+  https://archive.apache.org/dist/spark/\
+  spark-3.5.0/spark-3.5.0-bin-hadoop3.tgz
+<span class="d"># Same extract + mv + chown steps</span></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== SLIDE 12 · Spark Config ========== -->
+<section class="slide light" data-screen-label="12 Spark Config">
+  <div class="chrome"><span>Section 3 &mdash; Spark & Cluster</span><span>12 / 20</span></div>
+  <div class="s-body gap-2">
+    <div class="s-title">Spark Configuration</div>
+    <div class="s-subtitle"><code>spark-env.sh</code> controls memory allocation and driver bindings. Must be identical across all nodes.</div>
+    <div class="g3" style="margin-top:1.5vh">
+      <div style="display:flex;flex-direction:column;gap:1.5vh">
+        <div class="s-label">spark-env.sh</div>
+        <div class="term">
+          <div class="term-bar"><span class="dots"><i></i><i></i><i></i></span><span class="t-title">$SPARK_HOME/conf/spark-env.sh</span></div>
+          <pre><span class="d"># Copy template first</span>
+<span class="p">$</span> cp spark-env.sh.template spark-env.sh
+
+export JAVA_HOME=${JAVA_HOME}
+export <span class="b">SPARK_MASTER_HOST</span>=spark-master
+export <span class="b">SPARK_WORKER_MEMORY</span>=4g
+export <span class="b">SPARK_EXECUTOR_MEMORY</span>=2g
+export HADOOP_CONF_DIR=\
+  $HADOOP_HOME/etc/hadoop
+
+<span class="d"># WSL2 ONLY — critical:</span>
+export <span class="b">SPARK_LOCAL_IP</span>=192.168.1.X
+export <span class="b">SPARK_PUBLIC_DNS</span>=192.168.1.X</pre>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:1.5vh">
+        <div class="s-label">spark-defaults.conf</div>
+        <div class="term">
+          <div class="term-bar"><span class="dots"><i></i><i></i><i></i></span><span class="t-title">spark-defaults.conf</span></div>
+          <pre>spark.master  spark://spark-master:7077
+spark.eventLog.enabled          <span class="b">true</span>
+spark.eventLog.dir              /tmp/spark-events
+spark.history.fs.logDirectory   /tmp/spark-events</pre>
+        </div>
+        <div class="term" style="margin-top:1vh">
+          <div class="term-bar"><span class="dots"><i></i><i></i><i></i></span><span class="t-title">setup</span></div>
+          <pre><span class="d"># Create events dir BEFORE starting</span>
+<span class="p">$</span> <span class="b">mkdir -p /tmp/spark-events</span></pre>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:1.5vh">
+        <div class="s-label">workers</div>
+        <div class="term">
+          <div class="term-bar"><span class="dots"><i></i><i></i><i></i></span><span class="t-title">$SPARK_HOME/conf/workers</span></div>
+          <pre>spark-worker-1
+spark-worker-2</pre>
+        </div>
+        <div class="s-label" style="margin-top:1.5vh">File Structure</div>
+        <div class="term">
+          <div class="term-bar"><span class="dots"><i></i><i></i><i></i></span><span class="t-title">tree</span></div>
+          <pre>/usr/local/spark/
+├── conf/
+│   ├── spark-env.sh
+│   ├── spark-defaults.conf
+│   └── workers
+├── bin/
+└── sbin/</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== SLIDE 13 · PySpark Setup ========== -->
+<section class="slide dark" data-screen-label="13 PySpark">
+  <div class="chrome"><span>Section 3 &mdash; Spark & Cluster</span><span>13 / 20</span></div>
+  <div class="s-body gap-2">
+    <div class="s-title">Python & PySpark Setup</div>
+    <div class="s-subtitle">PySpark version must exactly match the cluster's Spark version (3.5.0).</div>
+    <div class="g2" style="margin-top:2vh">
+      <div style="display:flex;flex-direction:column;gap:2vh">
+        <div class="s-label">Linux & WSL2</div>
+        <div class="term">
+          <div class="term-bar"><span class="dots"><i></i><i></i><i></i></span><span class="t-title">linux — pip install</span></div>
+          <pre><span class="p">$</span> sudo apt update
+<span class="p">$</span> sudo apt install -y python3 python3-pip
+
+<span class="d"># Upgrade pip</span>
+<span class="p">$</span> python3 -m pip install --upgrade \
+    pip setuptools wheel --break-system-packages
+
+<span class="d"># Install PySpark (exact version match)</span>
+<span class="p">$</span> <span class="b">python3 -m pip install pyspark==3.5.0</span> \
+    --break-system-packages
+
+<span class="d"># Verify</span>
+<span class="p">$</span> python3 -c "import pyspark; print(pyspark.__version__)"
+<span class="b">3.5.0</span></pre>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:2vh">
+        <div class="s-label">macOS</div>
+        <div class="term">
+          <div class="term-bar"><span class="dots"><i></i><i></i><i></i></span><span class="t-title">macos — pip install</span></div>
+          <pre><span class="p">$</span> brew install python@3.11
+
+<span class="p">$</span> python3 -m pip install --upgrade \
+    pip setuptools wheel
+
+<span class="p">$</span> <span class="b">python3 -m pip install pyspark==3.5.0</span>
+
+<span class="p">$</span> python3 -c "import pyspark; print(pyspark.__version__)"
+<span class="b">3.5.0</span></pre>
+        </div>
+        <div class="callout" style="margin-top:2vh">
+          <strong style="font-family:var(--mono);font-size:.85em">Version Lock</strong><br>
+          PySpark must match Spark cluster version exactly. Mismatched versions cause serialization errors at runtime.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== SLIDE 14 · Dataset ========== -->
+<section class="slide light" data-screen-label="14 Dataset">
+  <div class="chrome"><span>Section 3 &mdash; Spark & Cluster</span><span>14 / 20</span></div>
+  <div class="s-body gap-2">
+    <div class="s-title">Dataset Preparation</div>
+    <div class="s-subtitle">Stanford Web-Google Graph — adjacency lists of web page hyperlinks.</div>
+    <div class="g2-6-4" style="margin-top:2vh">
+      <div style="display:flex;flex-direction:column;gap:2vh">
+        <div class="term">
+          <div class="term-bar"><span class="dots"><i></i><i></i><i></i></span><span class="t-title">download & extract</span></div>
+          <pre><span class="d"># Create dataset directory</span>
+<span class="p">$</span> mkdir -p ~/datasets && cd ~/datasets
+
+<span class="d"># Linux & WSL2</span>
+<span class="p">$</span> <span class="b">wget https://snap.stanford.edu/data/web-Google.txt.gz</span>
+<span class="p">$</span> <span class="b">gunzip web-Google.txt.gz</span>
+
+<span class="d"># macOS</span>
+<span class="p">$</span> curl -L -o web-Google.txt.gz \
+    https://snap.stanford.edu/data/web-Google.txt.gz
+<span class="p">$</span> gunzip web-Google.txt.gz
+
+<span class="d"># Preview format</span>
+<span class="p">$</span> <span class="b">head -n 10 web-Google.txt</span>
+<span class="d"># 0    1</span>
+<span class="d"># 0    2</span>
+<span class="d"># 0    3</span>
+<span class="d"># 1    0</span>
+<span class="d"># 1    2</span>
+<span class="d"># ...</span></pre>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:2vh">
+        <div class="g2" style="flex:0;gap:2vw">
+          <div class="stat-card">
+            <span class="stat-label">Vertices</span>
+            <span class="stat-val" style="font-size:max(22px,2.5vw)">875,713</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Edges</span>
+            <span class="stat-val" style="font-size:max(22px,2.5vw)">5,105,039</span>
+          </div>
+        </div>
+        <div class="s-label" style="margin-top:1vh">Format</div>
+        <div class="s-body-text">Adjacency list: tab-separated source → destination pairs. Comments prefixed with <code>#</code>.</div>
+        <div class="s-label" style="margin-top:1.5vh">Upload to HDFS</div>
+        <div class="term">
+          <div class="term-bar"><span class="dots"><i></i><i></i><i></i></span><span class="t-title">hdfs-upload</span></div>
+          <pre><span class="p">$</span> hdfs dfs -mkdir -p \
+    /user/$(whoami)/datasets
+<span class="p">$</span> <span class="b">hdfs dfs -put</span> ~/datasets/web-Google.txt \
+    /user/$(whoami)/datasets/
+<span class="p">$</span> hdfs dfs -ls /user/$(whoami)/datasets/</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== SLIDE 15 · Start Cluster ========== -->
+<section class="slide dark" data-screen-label="15 Start Cluster">
+  <div class="chrome"><span>Section 3 &mdash; Spark & Cluster</span><span>15 / 20</span></div>
+  <div class="s-body gap-2">
+    <div class="s-title">Starting the Cluster</div>
+    <div class="s-subtitle">Initialize HDFS and boot the Spark daemons. Run from the master node only.</div>
+    <div class="g2" style="margin-top:1.5vh">
+      <div style="display:flex;flex-direction:column;gap:2vh">
+        <div class="term">
+          <div class="term-bar"><span class="dots"><i></i><i></i><i></i></span><span class="t-title">master-node — start sequence</span></div>
+          <pre><span class="d"># Format NameNode (first-time only)</span>
+<span class="p">$</span> <span class="b">hdfs namenode -format</span>
+
+<span class="d"># Start HDFS (NameNode + DataNodes)</span>
+<span class="p">$</span> <span class="b">start-dfs.sh</span>
+
+<span class="d"># Start Spark (Master + Workers)</span>
+<span class="p">$</span> <span class="b">$SPARK_HOME/sbin/start-all.sh</span></pre>
+        </div>
+        <div class="term">
+          <div class="term-bar"><span class="dots"><i></i><i></i><i></i></span><span class="t-title">verify — jps</span></div>
+          <pre><span class="p">$</span> <span class="b">jps</span>
+<span class="b">12345</span> NameNode
+<span class="b">12346</span> SecondaryNameNode
+<span class="b">12347</span> Master
+<span class="b">12348</span> Worker</pre>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:2vh">
+        <div class="s-label">Web UIs</div>
+        <table class="tbl">
+          <thead><tr><th>Service</th><th>URL</th></tr></thead>
+          <tbody>
+            <tr><td>Spark Master</td><td>http://spark-master:8080</td></tr>
+            <tr><td>Spark Worker</td><td>http://spark-worker-1:8081</td></tr>
+            <tr><td>HDFS NameNode</td><td>http://spark-master:9870</td></tr>
+            <tr><td>Spark Driver</td><td>http://localhost:4040</td></tr>
+          </tbody>
+        </table>
+        <div class="callout" style="margin-top:1vh">
+          <strong style="font-family:var(--mono);font-size:.85em">DataNode Missing?</strong><br>
+          If <code>jps</code> on a worker doesn't show DataNode, cluster IDs are out of sync. Run on the worker:<br>
+          <code>rm -rf ~/hadoop_data/datanode/*</code><br>
+          Then restart HDFS from master.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== SLIDE 16 · PageRank Logic ========== -->
+<section class="slide light" data-screen-label="16 PageRank Logic">
+  <div class="chrome"><span>Section 4 &mdash; Implementation</span><span>16 / 20</span></div>
+  <div class="s-body gap-2">
+    <div class="s-title">PySpark PageRank Logic</div>
+    <div class="speaker">Speaker: Mehak Zehra</div>
+    <div class="s-subtitle">Ranks are distributed equally among outgoing edges each iteration.</div>
+    <div class="g2" style="margin-top:1.5vh">
+      <div style="display:flex;flex-direction:column;gap:2vh">
+        <div class="s-label">Key Functions</div>
+        <table class="tbl">
+          <thead><tr><th>Function</th><th>Purpose</th></tr></thead>
+          <tbody>
+            <tr><td>parse_line()</td><td>Parse Stanford graph format (source → neighbors)</td></tr>
+            <tr><td>distribute_ranks()</td><td>flatMap: distribute rank to all neighbors</td></tr>
+            <tr><td>aggregate_ranks()</td><td>reduceByKey: aggregate contributions per node</td></tr>
+            <tr><td>run_pagerank()</td><td>Main loop with caching strategy</td></tr>
+          </tbody>
+        </table>
+        <div class="s-label" style="margin-top:1.5vh">Algorithm Steps</div>
+        <div class="pipe-grid" style="grid-template-columns:repeat(3,1fr)">
+          <div class="pipe-step"><span class="ps-num">01</span><span class="ps-title">Initialize</span><span class="ps-desc">Assign each node rank = 1.0</span></div>
+          <div class="pipe-step"><span class="ps-num">02</span><span class="ps-title">Distribute</span><span class="ps-desc">Each node contributes rank/out-degree to neighbors</span></div>
+          <div class="pipe-step"><span class="ps-num">03</span><span class="ps-title">Aggregate</span><span class="ps-desc">New rank = (1-0.85)/N + 0.85 * Σ(contributions)</span></div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:2vh">
+        <div class="s-label">Distributed Concepts</div>
+        <table class="tbl">
+          <thead><tr><th>Concept</th><th>Implementation</th></tr></thead>
+          <tbody>
+            <tr><td>RDD Partitioning</td><td><code>textFile(path, minPartitions=8)</code></td></tr>
+            <tr><td>Broadcast</td><td><code>sc.broadcast(links_dict)</code></td></tr>
+            <tr><td>Local Reduce</td><td><code>reduceByKey()</code></td></tr>
+            <tr><td>Caching</td><td><code>.persist(MEMORY_AND_DISK)</code></td></tr>
+            <tr><td>Checkpointing</td><td><code>sc.setCheckpointDir()</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== SLIDE 17 · Optimizations ========== -->
+<section class="slide dark" data-screen-label="17 Optimizations">
+  <div class="chrome"><span>Section 4 &mdash; Implementation</span><span>17 / 20</span></div>
+  <div class="s-body gap-2">
+    <div class="s-title">Performance Optimizations</div>
+    <div class="g2" style="margin-top:2vh">
+      <div style="display:flex;flex-direction:column;gap:2.5vh">
+        <div>
+          <div class="s-heading">Broadcast Variables</div>
+          <div class="s-body-text"><code>sc.broadcast()</code> efficiently shares read-only data (graph structure) across all executors. Avoids re-shipping the adjacency list on every iteration.</div>
+        </div>
+        <div>
+          <div class="s-heading">Caching Strategy</div>
+          <div class="s-body-text"><code>.persist(StorageLevel.MEMORY_AND_DISK)</code> handles datasets larger than available memory. Intermediate RDDs stay in memory; overflow spills to disk instead of recomputing.</div>
+        </div>
+        <div>
+          <div class="s-heading">Lazy Evaluation</div>
+          <div class="s-body-text">Spark only computes when an action is triggered (<code>collect</code>, <code>saveAsTextFile</code>). Transformations are chained into an optimized execution plan.</div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:2.5vh">
+        <div>
+          <div class="s-heading">reduceByKey vs groupByKey</div>
+          <div class="s-body-text"><code>reduceByKey</code> performs local reduction before shuffling across the network. Significantly reduces network I/O compared to <code>groupByKey</code> which shuffles all data first.</div>
+        </div>
+        <div class="s-label" style="margin-top:.5vh">Comparison</div>
+        <div class="term">
+          <div class="term-bar"><span class="dots"><i></i><i></i><i></i></span><span class="t-title">shuffle comparison</span></div>
+          <pre><span class="d"># groupByKey — shuffles ALL values</span>
+rdd.groupByKey().mapValues(sum)
+<span class="d"># Network: O(n) data transferred</span>
+
+<span class="d"># reduceByKey — local reduce first</span>
+rdd.<span class="b">reduceByKey</span>(lambda a, b: a + b)
+<span class="d"># Network: O(k) data transferred</span>
+<span class="d"># where k = number of unique keys</span></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== SLIDE 18 · Submit Job ========== -->
+<section class="slide light" data-screen-label="18 Submit Job">
+  <div class="chrome"><span>Section 4 &mdash; Implementation</span><span>18 / 20</span></div>
+  <div class="s-body gap-2">
+    <div class="s-title">Submitting the Job</div>
+    <div class="s-subtitle">Executing the PySpark application across the cluster.</div>
+    <div class="g2" style="margin-top:2vh">
+      <div style="display:flex;flex-direction:column;gap:2vh">
+        <div class="term">
+          <div class="term-bar"><span class="dots"><i></i><i></i><i></i></span><span class="t-title">spark-submit</span></div>
+          <pre><span class="p">$</span> <span class="b">spark-submit</span> \
+    --master <span class="b">spark://spark-master:7077</span> \
+    --deploy-mode <span class="b">client</span> \
+    --driver-memory <span class="b">2g</span> \
+    --executor-memory <span class="b">2g</span> \
+    --total-executor-cores <span class="b">6</span> \
+    --conf spark.pyspark.driver.python=$(which python3) \
+    --conf spark.pyspark.python=$(which python3) \
+    <span class="b">pagerank.py</span></pre>
+        </div>
+        <div class="s-label" style="margin-top:1vh">Parameter Reference</div>
+        <table class="tbl">
+          <thead><tr><th>Parameter</th><th>Value</th></tr></thead>
+          <tbody>
+            <tr><td>--master</td><td>Spark master endpoint</td></tr>
+            <tr><td>--deploy-mode</td><td>client (required for Python)</td></tr>
+            <tr><td>--driver-memory</td><td>Memory for the driver process</td></tr>
+            <tr><td>--executor-memory</td><td>Memory per executor</td></tr>
+            <tr><td>--total-executor-cores</td><td>Total cores across all executors</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:2vh">
+        <div class="s-label">Monitoring (Port 4040)</div>
+        <table class="tbl">
+          <thead><tr><th>Tab</th><th>Shows</th></tr></thead>
+          <tbody>
+            <tr><td>Jobs</td><td>Current and completed job stages</td></tr>
+            <tr><td>Stages</td><td>Task details, shuffle read/write</td></tr>
+            <tr><td>Storage</td><td>Cached RDDs and storage level</td></tr>
+            <tr><td>Executors</td><td>Executor resource usage</td></tr>
+            <tr><td>Environment</td><td>Configuration properties</td></tr>
+          </tbody>
+        </table>
+        <div class="term" style="margin-top:1vh">
+          <div class="term-bar"><span class="dots"><i></i><i></i><i></i></span><span class="t-title">view logs</span></div>
+          <pre><span class="d"># Driver logs</span>
+<span class="p">$</span> tail -f $SPARK_HOME/logs/\
+spark-*-Master-*.out
+
+<span class="d"># Worker logs</span>
+<span class="p">$</span> tail -f $SPARK_HOME/logs/\
+spark-*-Worker-*.out</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== SLIDE 19 · HDFS Output ========== -->
+<section class="slide dark" data-screen-label="19 HDFS Output">
+  <div class="chrome"><span>Section 4 &mdash; Implementation</span><span>19 / 20</span></div>
+  <div class="s-body gap-2">
+    <div class="s-title">Viewing HDFS Output</div>
+    <div class="s-subtitle">Access the distributed file system to view sorted PageRank scores.</div>
+    <div class="g2" style="margin-top:2vh">
+      <div style="display:flex;flex-direction:column;gap:2vh">
+        <div class="term">
+          <div class="term-bar"><span class="dots"><i></i><i></i><i></i></span><span class="t-title">hdfs — view results</span></div>
+          <pre><span class="d"># List output files</span>
+<span class="p">$</span> <span class="b">hdfs dfs -ls</span> /user/$(whoami)/pagerank_output/
+
+<span class="d"># View top 10 results directly</span>
+<span class="p">$</span> <span class="b">hdfs dfs -cat</span> \
+    /user/$(whoami)/pagerank_output/part-00000 \
+    | <span class="b">head -n 10</span>
+
+<span class="d"># Download to local machine</span>
+<span class="p">$</span> hdfs dfs -get \
+    /user/$(whoami)/pagerank_output \
+    ~/local_pagerank_results
+
+<span class="d"># Sort by rank (descending)</span>
+<span class="p">$</span> cat ~/local_pagerank_results/part-* \
+    | <span class="b">sort -t',' -k2 -rn</span> | head -n 20</pre>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:2vh">
+        <div class="s-label">Stopping the Cluster</div>
+        <div class="term">
+          <div class="term-bar"><span class="dots"><i></i><i></i><i></i></span><span class="t-title">shutdown</span></div>
+          <pre><span class="d"># Stop Spark cluster</span>
+<span class="p">$</span> <span class="b">$SPARK_HOME/sbin/stop-all.sh</span>
+
+<span class="d"># Stop HDFS</span>
+<span class="p">$</span> <span class="b">$HADOOP_HOME/sbin/stop-dfs.sh</span></pre>
+        </div>
+        <div class="s-label" style="margin-top:1.5vh">Quick Reference</div>
+        <div class="term">
+          <div class="term-bar"><span class="dots"><i></i><i></i><i></i></span><span class="t-title">hdfs commands</span></div>
+          <pre><span class="b">hdfs dfs -ls</span>    /path      <span class="d"># list</span>
+<span class="b">hdfs dfs -put</span>   local /dst <span class="d"># upload</span>
+<span class="b">hdfs dfs -get</span>   /src local <span class="d"># download</span>
+<span class="b">hdfs dfs -cat</span>   /path      <span class="d"># read</span>
+<span class="b">hdfs dfs -rm -r</span> /path      <span class="d"># delete</span></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== SLIDE 20 · Portability Testing ========== -->
+<section class="slide dark" data-screen-label="20 Portability">
+  <div class="chrome"><span>Section 4 &mdash; Implementation</span><span>20 / 20</span></div>
+  <div class="s-body gap-2">
+    <div style="display:flex;align-items:center;gap:1.5vw">
+      <div class="s-title" style="margin-bottom:0">Cross-Group Portability Testing</div>
+      <span class="warn">40% of grade</span>
+    </div>
+    <div class="s-subtitle">Peer groups connect to the host's spark-master, read from HDFS, and query the top 5 influencers.</div>
+    <div class="g2" style="margin-top:1.5vh">
+      <div style="display:flex;flex-direction:column;gap:2vh">
+        <div class="s-label">Host Group Provides</div>
+        <div class="info-row"><span class="info-k">Spark Master</span><span class="info-v">spark://spark-master:7077</span></div>
+        <div class="info-row"><span class="info-k">Master IP</span><span class="info-v">192.168.1.100</span></div>
+        <div class="info-row"><span class="info-k">HDFS Output</span><span class="info-v">hdfs://spark-master:9000/user/&lt;user&gt;/pagerank_output</span></div>
+        <div class="s-label" style="margin-top:1.5vh">Client Runs</div>
+        <div class="term">
+          <div class="term-bar"><span class="dots"><i></i><i></i><i></i></span><span class="t-title">client — query_top5.py</span></div>
+          <pre><span class="d"># Verify connectivity first</span>
+<span class="p">$</span> ping -c 4 spark-master
+<span class="p">$</span> nc -zv spark-master 7077
+
+<span class="d"># Run query against host cluster</span>
+<span class="p">$</span> <span class="b">spark-submit</span> \
+    --master spark://spark-master:7077 \
+    <span class="b">query_top5.py</span></pre>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:2vh">
+        <div class="s-label">Success Criteria</div>
+        <div style="display:flex;flex-direction:column;gap:1vh">
+          <div class="info-row"><span class="info-k" style="min-width:auto;opacity:.6">&#9744;</span><span class="info-v" style="opacity:.85">Client connected to host's Spark Master</span></div>
+          <div class="info-row"><span class="info-k" style="min-width:auto;opacity:.6">&#9744;</span><span class="info-v" style="opacity:.85">HDFS read operation completed</span></div>
+          <div class="info-row"><span class="info-k" style="min-width:auto;opacity:.6">&#9744;</span><span class="info-v" style="opacity:.85">Top 5 results displayed correctly</span></div>
+          <div class="info-row"><span class="info-k" style="min-width:auto;opacity:.6">&#9744;</span><span class="info-v" style="opacity:.85">Results match host's original output</span></div>
+          <div class="info-row"><span class="info-k" style="min-width:auto;opacity:.6">&#9744;</span><span class="info-v" style="opacity:.85">Both groups signed off</span></div>
+        </div>
+        <div class="callout" style="margin-top:1vh">
+          <strong style="font-family:var(--mono);font-size:.85em">Client Setup</strong><br>
+          1. Install PySpark on testing machine<br>
+          2. Add host entry to <code>/etc/hosts</code><br>
+          3. Verify network connectivity to host<br>
+          4. Run <code>query_top5.py</code> against host cluster
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</div>
+
+<div id="nav"></div>
+
+<script>
+const deck = document.getElementById('deck');
+const slides = deck.querySelectorAll('.slide');
+const nav = document.getElementById('nav');
+let idx = 0, total = slides.length, lock = false;
+
+deck.style.width = (total * 100) + 'vw';
+
+slides.forEach((s, i) => {
+  const b = document.createElement('button');
+  b.className = 'dot'; b.dataset.i = i;
+  b.setAttribute('aria-label', 'Slide ' + (i + 1));
+  b.onclick = () => go(i);
+  nav.appendChild(b);
+});
+
+function go(n) {
+  if (lock) return;
+  idx = Math.max(0, Math.min(total - 1, n));
+  deck.style.transform = `translateX(${-idx * 100}vw)`;
+  slides.forEach((s, i) => s.classList.toggle('active', i === idx));
+  nav.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === idx));
+  const isLight = slides[idx].classList.contains('light');
+  document.body.classList.toggle('light-nav', isLight);
+  document.body.style.background = isLight ? 'var(--light-bg)' : 'var(--dark-bg)';
+  lock = true; setTimeout(() => lock = false, 600);
+}
+
+addEventListener('keydown', e => {
+  if (e.key === 'Escape') { e.preventDefault(); toggleOverview(); return }
+  if (overviewOn) return;
+  if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ' || e.key === 'ArrowDown') go(idx + 1);
+  if (e.key === 'ArrowLeft' || e.key === 'PageUp' || e.key === 'ArrowUp') go(idx - 1);
+  if (e.key === 'Home') go(0);
+  if (e.key === 'End') go(total - 1);
+});
+
+let wheelTO = null, wheelAcc = 0;
+addEventListener('wheel', e => {
+  wheelAcc += e.deltaY + e.deltaX;
+  if (Math.abs(wheelAcc) > 50) { go(idx + (wheelAcc > 0 ? 1 : -1)); wheelAcc = 0 }
+  clearTimeout(wheelTO); wheelTO = setTimeout(() => wheelAcc = 0, 150);
+}, { passive: true });
+
+let tx = 0, ty = 0;
+addEventListener('touchstart', e => { tx = e.touches[0].clientX; ty = e.touches[0].clientY }, { passive: true });
+addEventListener('touchend', e => {
+  const dx = e.changedTouches[0].clientX - tx;
+  const dy = e.changedTouches[0].clientY - ty;
+  if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) go(idx + (dx < 0 ? 1 : -1));
+}, { passive: true });
+
+let overviewOn = false;
+const ov = document.createElement('div');
+ov.id = 'overview';
+ov.style.cssText = 'position:fixed;inset:0;z-index:100;background:rgba(15,17,23,.95);backdrop-filter:blur(12px);display:none;overflow-y:auto;padding:4vh 4vw';
+document.body.appendChild(ov);
+
+function buildOverview() {
+  ov.innerHTML = '';
+  const grid = document.createElement('div');
+  grid.style.cssText = 'display:grid;grid-template-columns:repeat(5,1fr);gap:1.5vh 1.2vw;max-width:92vw;margin:0 auto';
+  slides.forEach((s, i) => {
+    const card = document.createElement('div');
+    card.style.cssText = 'cursor:pointer;border-radius:6px;overflow:hidden;border:1px solid ' + (i === idx ? 'rgba(255,255,255,.4)' : 'rgba(255,255,255,.08)') + ';transition:border-color .2s';
+    card.onmouseenter = () => card.style.borderColor = 'rgba(255,255,255,.3)';
+    card.onmouseleave = () => card.style.borderColor = i === idx ? 'rgba(255,255,255,.4)' : 'rgba(255,255,255,.08)';
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'width:100%;aspect-ratio:16/9;overflow:hidden;position:relative;pointer-events:none;background:' + (s.classList.contains('light') ? 'var(--light-bg)' : 'var(--dark-bg)');
+    const clone = s.cloneNode(true);
+    clone.style.cssText = 'width:100vw;height:100vh;transform:scale(' + (1 / 5.5) + ');transform-origin:top left;position:absolute;top:0;left:0;pointer-events:none';
+    wrap.appendChild(clone);
+    const label = document.createElement('div');
+    label.style.cssText = 'padding:5px 8px;font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:rgba(255,255,255,.5)';
+    label.textContent = String(i + 1).padStart(2, '0') + ' / ' + total;
+    card.appendChild(wrap);
+    card.appendChild(label);
+    card.onclick = () => { toggleOverview(); go(i) };
+    grid.appendChild(card);
+  });
+  ov.appendChild(grid);
+}
+
+function toggleOverview() {
+  overviewOn = !overviewOn;
+  if (overviewOn) { buildOverview(); ov.style.display = 'block' }
+  else { ov.style.display = 'none' }
+}
+
+go(0);
+</script>
+</body>
+</html>
